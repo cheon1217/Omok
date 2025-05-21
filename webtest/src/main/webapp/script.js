@@ -11,33 +11,58 @@ document.addEventListener('DOMContentLoaded', function () {
     const introOverlay = document.querySelector('.intro-overlay');
     const introTitle = document.querySelector('.intro-title');
     const introText = document.querySelector('.intro-text');
-    const startBtn = document.querySelector('.start-btn');
+    // const startBtn = document.querySelector('.start-btn');
     const boardContainer = document.querySelector('.board-container');
 
     let gameBoard = Array(boardSize).fill().map(() => Array(boardSize).fill(null));
     let currentPlayer = 'black';
     let gameEnded = false;
+    let socket = null;
 
-    // ✅ WebSocket 연결
-    const socket = new WebSocket("ws://" + location.host + location.pathname.replace(/\/[^\/]*$/, '') + "/ws/omok");
+    const roomId = window.roomId || new URLSearchParams(location.search).get('room_id');
+    if (!roomId) {
+        alert("방 코드가 없습니다. 먼저 방을 만들거나 참가해주세요.");
+        location.href = "join.jsp";
+        return;
+    }
+    console.log("roomId:", roomId);
+    
+    socket = new WebSocket(`ws://${location.host}/ws/omok/${roomId}`);
 
-    socket.onopen = () => console.log("WebSocket 연결됨");
-
+    socket.onopen = () => console.log("WebSocket 연결됨 - Room:", roomId);
+    
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
+        console.log("📩 수신:", data);
 
-        const row = data.row;
-        const col = data.col;
-        const stone = data.stone;
+        if (data.type === 'waiting') {
+            if (data.count === 1) {
+                statusMessage.textContent = "🕐 참가자 기다리는 중...";
+            }
+        }
 
-        if (gameBoard[row][col] === null && !gameEnded) {
+        if (data.type === 'playing') {
+            introOverlay.style.opacity = '0';
+            setTimeout(() => {
+                introOverlay.style.display = 'none';
+                boardContainer.style.animation = 'board-drop 1.5s forwards';
+                setTimeout(() => {
+                    board.classList.add('show');
+                    createDustEffect();
+                }, 100);
+            }, 1000);
+        }
+
+        const { row, col, stone, gameOver, message } = data;
+
+        if (row !== undefined && col !== undefined && gameBoard[row][col] === null && !gameEnded) {
             const cell = board.querySelector(`[data-row='${row}'][data-col='${col}']`);
             placeStone(cell, stone);
             gameBoard[row][col] = stone;
 
-            if (data.gameOver) {
+            if (gameOver) {
                 gameEnded = true;
-                winMessage.textContent = data.message;
+                winMessage.textContent = message;
                 martialMessage.textContent = '천하무적 승리의 순간!';
                 winOverlay.style.opacity = '1';
                 winOverlay.style.pointerEvents = 'auto';
@@ -55,13 +80,15 @@ document.addEventListener('DOMContentLoaded', function () {
         introText.style.opacity = '1';
         introText.style.transform = 'translateY(0)';
     }, 1700);
-    setTimeout(() => {
+    /* setTimeout(() => {
         startBtn.style.transition = 'all 1s ease';
         startBtn.style.opacity = '1';
         startBtn.style.transform = 'translateY(0)';
     }, 2500);
+	*/
 
-    startBtn.addEventListener('click', () => {
+    // ✅ start 버튼은 단순히 인트로 애니메이션만 없애는 용도로!
+    /* startBtn.addEventListener('click', () => {
         introOverlay.style.opacity = '0';
         setTimeout(() => {
             introOverlay.style.display = 'none';
@@ -72,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }, 100);
         }, 1000);
     });
+    */
 
     function createDustEffect() {
         const container = document.querySelector('.board-container');
@@ -110,21 +138,16 @@ document.addEventListener('DOMContentLoaded', function () {
         const row = parseInt(cell.dataset.row);
         const col = parseInt(cell.dataset.col);
 
-        // 돌 유효성 및 승리 판정은 서버가 수행
         fetch('GameServlet', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `row=${row}&col=${col}`
         })
-        .then(res => {
-            if (!res.ok) throw new Error('서버 응답 오류');
-            return res.json();
-        })
+        .then(res => res.json())
         .then(data => {
             if (data.success) {
                 socket.send(JSON.stringify({
-                    row: row,
-                    col: col,
+                    row, col,
                     stone: data.stone,
                     gameOver: data.gameOver,
                     message: data.message
