@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const introOverlay = document.querySelector('.intro-overlay');
     const introTitle = document.querySelector('.intro-title');
     const introText = document.querySelector('.intro-text');
-    // const startBtn = document.querySelector('.start-btn');
     const boardContainer = document.querySelector('.board-container');
 
     let gameBoard = Array(boardSize).fill().map(() => Array(boardSize).fill(null));
@@ -19,18 +18,19 @@ document.addEventListener('DOMContentLoaded', function () {
     let gameEnded = false;
     let socket = null;
 
+    const userId = window.userId;
     const roomId = window.roomId || new URLSearchParams(location.search).get('room_id');
     if (!roomId) {
         alert("방 코드가 없습니다. 먼저 방을 만들거나 참가해주세요.");
         location.href = "join.jsp";
         return;
     }
-    console.log("roomId:", roomId);
-    
+    console.log("roomId:", roomId, "userId:", userId);
+
     socket = new WebSocket(`ws://${location.host}/ws/omok/${roomId}`);
 
     socket.onopen = () => console.log("WebSocket 연결됨 - Room:", roomId);
-    
+
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         console.log("📩 수신:", data);
@@ -73,33 +73,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    // 인트로 애니메이션
     setTimeout(() => introTitle.style.animation = 'title-appear 1.2s forwards', 500);
     setTimeout(() => {
         introText.style.transition = 'all 1s ease';
         introText.style.opacity = '1';
         introText.style.transform = 'translateY(0)';
     }, 1700);
-    /* setTimeout(() => {
-        startBtn.style.transition = 'all 1s ease';
-        startBtn.style.opacity = '1';
-        startBtn.style.transform = 'translateY(0)';
-    }, 2500);
-	*/
-
-    // ✅ start 버튼은 단순히 인트로 애니메이션만 없애는 용도로!
-    /* startBtn.addEventListener('click', () => {
-        introOverlay.style.opacity = '0';
-        setTimeout(() => {
-            introOverlay.style.display = 'none';
-            boardContainer.style.animation = 'board-drop 1.5s forwards';
-            setTimeout(() => {
-                board.classList.add('show');
-                createDustEffect();
-            }, 100);
-        }, 1000);
-    });
-    */
 
     function createDustEffect() {
         const container = document.querySelector('.board-container');
@@ -147,6 +126,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             if (data.success) {
                 socket.send(JSON.stringify({
+                    userId: userId,
                     row, col,
                     stone: data.stone,
                     gameOver: data.gameOver,
@@ -229,6 +209,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     initializeBoard();
 });
+
 
 /**
 const board = document.getElementById("board");

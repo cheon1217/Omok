@@ -15,8 +15,9 @@
     <title>천하제일 오목대회</title>
     <link rel="stylesheet" href="style.css">
     <script>
-        const roomId = "<%= roomId %>";
-    </script>
+	    window.userId = "<%= userId %>";
+	    window.roomId = "<%= roomId %>";
+	</script>
     <script src="script.js" defer></script>
 </head>
 <body>
