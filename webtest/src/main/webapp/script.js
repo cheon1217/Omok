@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     console.log("roomId:", roomId, "userId:", userId);
 
-    socket = new WebSocket(`ws://${location.host}/ws/omok/${roomId}`);
+    socket = new WebSocket(`ws://${location.host}/omok`);
 
     socket.onopen = () => console.log("WebSocket 연결됨 - Room:", roomId);
 

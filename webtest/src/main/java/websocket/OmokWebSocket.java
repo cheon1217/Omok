@@ -16,7 +16,7 @@ import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value = "/ws/omok/{roomId}", configurator = HttpSessionConfigurator.class)
+@ServerEndpoint(value = "/omok", configurator = HttpSessionConfigurator.class)
 public class OmokWebSocket {
 
     private static final Map<String, List<Session>> roomSessions = new ConcurrentHashMap<>();
